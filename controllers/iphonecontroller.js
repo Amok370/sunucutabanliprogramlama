@@ -131,6 +131,140 @@ const controller = {
                 message: 'Tahmin verisi alınamadı' 
             });
         }
+    },
+    // ========================================
+    // CRUD ENDPOINT'LERİ
+    // ========================================
+
+    /**
+     * Yeni Tamir Kaydı Oluştur
+     * POST /api/repairs
+     */
+    createRepair: async (req, res) => {
+        try {
+            const data = req.body;
+            
+            const result = await IphoneService.createRepairWithValidation(data);
+            
+            res.status(201).json({
+                status: 'success',
+                message: result.message,
+                data: {
+                    operation_id: result.operation_id
+                }
+            });
+
+        } catch (err) {
+            console.error('Tamir Oluşturma Hatası:', err);
+            res.status(400).json({
+                status: 'error',
+                message: err.message
+            });
+        }
+    },
+
+    /**
+     * Tek Bir Tamir Kaydını Getir
+     * GET /api/repairs/:id
+     */
+    getRepairById: async (req, res) => {
+        try {
+            const id = parseInt(req.params.id);
+            
+            const repair = await IphoneService.getRepairById(id);
+            
+            res.json({
+                status: 'success',
+                data: repair
+            });
+
+        } catch (err) {
+            console.error('Tamir Getirme Hatası:', err);
+            res.status(404).json({
+                status: 'error',
+                message: err.message
+            });
+        }
+    },
+
+    /**
+     * Tüm Tamir Kayıtlarını Listele
+     * GET /api/repairs?limit=50
+     */
+    getAllRepairs: async (req, res) => {
+        try {
+            const limit = parseInt(req.query.limit) || 50;
+            
+            const result = await IphoneService.getAllRepairs(limit);
+            
+            res.json({
+                status: 'success',
+                total: result.total,
+                data: result.repairs
+            });
+
+        } catch (err) {
+            console.error('Tamir Listeleme Hatası:', err);
+            res.status(500).json({
+                status: 'error',
+                message: 'Tamir kayıtları alınamadı'
+            });
+        }
+    },
+
+    /**
+     * Tamir Kaydını Güncelle
+     * PUT /api/repairs/:id
+     */
+    updateRepair: async (req, res) => {
+        try {
+            const id = parseInt(req.params.id);
+            const data = req.body;
+            
+            const result = await IphoneService.updateRepairWithValidation(id, data);
+            
+            res.json({
+                status: 'success',
+                message: result.message,
+                data: {
+                    operation_id: result.operation_id
+                }
+            });
+
+        } catch (err) {
+            console.error('Tamir Güncelleme Hatası:', err);
+            res.status(400).json({
+                status: 'error',
+                message: err.message
+            });
+        }
+    },
+
+    /**
+     * Tamir Kaydını Sil
+     * DELETE /api/repairs/:id
+     */
+    deleteRepair: async (req, res) => {
+        try {
+            const id = parseInt(req.params.id);
+            
+            const result = await IphoneService.deleteRepairWithValidation(id);
+            
+            res.json({
+                status: 'success',
+                message: result.message,
+                data: {
+                    operation_id: result.operation_id
+                }
+            });
+
+        } catch (err) {
+            console.error('Tamir Silme Hatası:', err);
+            res.status(400).json({
+                status: 'error',
+                message: err.message
+            });
+        }
     }
 };
 

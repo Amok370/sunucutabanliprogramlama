@@ -161,6 +161,113 @@ const IphoneService = {
             base_period: '90_days',
             predictions: results
         };
+    },
+    // ========================================
+    // CRUD İŞLEMLERİ VE İŞ KURALLARI
+    // ========================================
+
+    // CREATE: Yeni tamir kaydı ekle (İş Kuralı 2 ile)
+    createRepairWithValidation: async (data) => {
+        // İŞ KURALI 2: Geçmiş tarihe tamir kaydı eklenemez
+        const today = new Date();
+        today.setHours(0, 0, 0, 0); // Sadece tarihi karşılaştır
+        
+        const operationDate = new Date(data.operation_date);
+        operationDate.setHours(0, 0, 0, 0);
+        
+        if (operationDate < today) {
+            throw new Error('Geçmiş tarihe tamir kaydı eklenemez');
+        }
+
+        // Validasyon: Gerekli alanlar var mı?
+        if (!data.model_id || !data.service_id || !data.part_id || !data.operation_date) {
+            throw new Error('Model, servis, parça ve tarih bilgileri zorunludur');
+        }
+
+        // Model'e kaydet
+        const insertId = await IphoneModel.createRepair(data);
+        
+        return {
+            operation_id: insertId,
+            message: 'Tamir kaydı başarıyla oluşturuldu'
+        };
+    },
+
+    // READ: Tek bir tamir kaydını getir
+    getRepairById: async (id) => {
+        const repair = await IphoneModel.getRepairById(id);
+        
+        if (!repair) {
+            throw new Error('Tamir kaydı bulunamadı');
+        }
+        
+        return repair;
+    },
+
+    // READ: Tüm tamir kayıtlarını listele
+    getAllRepairs: async (limit = 50) => {
+        const repairs = await IphoneModel.getAllRepairs(limit);
+        
+        return {
+            total: repairs.length,
+            repairs: repairs
+        };
+    },
+
+    // UPDATE: Tamir kaydını güncelle (İş Kuralı 3 ile)
+    updateRepairWithValidation: async (id, data) => {
+        // Önce kayıt var mı kontrol et
+        const repair = await IphoneModel.getRepairById(id);
+        
+        if (!repair) {
+            throw new Error('Tamir kaydı bulunamadı');
+        }
+
+        // İŞ KURALI 3: Kritik anomalili tamir güncellenemez
+        const hasCriticalAnomaly = await IphoneModel.hasRepairCriticalAnomaly(id);
+        
+        if (hasCriticalAnomaly) {
+            throw new Error('Kritik anomalisi olan tamir kaydı güncellenemez');
+        }
+
+        // Güncelleme yap
+        const affectedRows = await IphoneModel.updateRepair(id, data);
+        
+        if (affectedRows === 0) {
+            throw new Error('Tamir kaydı güncellenemedi');
+        }
+        
+        return {
+            operation_id: id,
+            message: 'Tamir kaydı başarıyla güncellendi'
+        };
+    },
+
+    // DELETE: Tamir kaydını sil (İş Kuralı 1 ile)
+    deleteRepairWithValidation: async (id) => {
+        // Önce kayıt var mı ve tamamlanmış mı kontrol et
+        const repair = await IphoneModel.getRepairById(id);
+        
+        if (!repair) {
+            throw new Error('Tamir kaydı bulunamadı');
+        }
+
+        // İŞ KURALI 1: Tamamlanmış tamir silinemez
+        if (repair.if_repair_successful === 1) {
+            throw new Error('Tamamlanmış tamir kayıtları silinemez');
+        }
+
+        // Sil
+        const affectedRows = await IphoneModel.deleteRepair(id);
+        
+        if (affectedRows === 0) {
+            throw new Error('Tamir kaydı silinemedi');
+        }
+        
+        return {
+            operation_id: id,
+            message: 'Tamir kaydı başarıyla silindi'
+        };
     }
 };
 

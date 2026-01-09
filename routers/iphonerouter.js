@@ -24,4 +24,23 @@ router.get('/services', controller.services);
 // Tarayıcıdan '/api/predictions' isteği gelirse -> controller.predictions fonksiyonunu çalıştır
 router.get('/predictions', controller.predictions);
 
+// ========================================
+// CRUD ENDPOINT'LERİ
+// ========================================
+
+// CREATE: Yeni tamir kaydı oluştur
+router.post('/repairs', controller.createRepair);
+
+// READ: Tek bir tamir kaydını getir
+router.get('/repairs/:id', controller.getRepairById);
+
+// READ: Tüm tamir kayıtlarını listele
+router.get('/repairs', controller.getAllRepairs);
+
+// UPDATE: Tamir kaydını güncelle
+router.put('/repairs/:id', controller.updateRepair);
+
+// DELETE: Tamir kaydını sil
+router.delete('/repairs/:id', controller.deleteRepair);
+
 module.exports = router;

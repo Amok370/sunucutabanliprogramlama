@@ -153,6 +153,104 @@ const IphoneModel = {
         `;
         const [rows] = await db.execute(sql, [startDate]);
         return rows;
+    },
+    // ========================================
+    // CRUD İŞLEMLERİ
+    // ========================================
+
+    // CREATE: Yeni tamir kaydı ekle
+    createRepair: async (data) => {
+        const sql = `
+            INSERT INTO repair_operations 
+            (model_id, service_id, part_id, operation_date, service_cost, if_repair_successful) 
+            VALUES (?, ?, ?, ?, ?, ?)
+        `;
+        const [result] = await db.execute(sql, [
+            data.model_id,
+            data.service_id,
+            data.part_id,
+            data.operation_date,
+            data.service_cost,
+            data.if_repair_successful || 0
+        ]);
+        return result.insertId;
+    },
+
+    // READ: Tek bir tamir kaydını getir
+    getRepairById: async (id) => {
+        const sql = `
+            SELECT 
+                ro.*,
+                im.model_name,
+                sc.service_name,
+                pt.part_name
+            FROM repair_operations ro
+            JOIN iphone_models im ON ro.model_id = im.model_id
+            JOIN service_centers sc ON ro.service_id = sc.service_id
+            JOIN part_types pt ON ro.part_id = pt.part_id
+            WHERE ro.operation_id = ?
+        `;
+        const [rows] = await db.execute(sql, [id]);
+        return rows[0] || null;
+    },
+
+    // READ: Tüm tamir kayıtlarını listele
+    getAllRepairs: async (limit = 50) => {
+        const sql = `
+            SELECT 
+                ro.operation_id,
+                ro.operation_date,
+                ro.service_cost,
+                ro.if_repair_successful,
+                im.model_name,
+                sc.service_name,
+                pt.part_name
+            FROM repair_operations ro
+            JOIN iphone_models im ON ro.model_id = im.model_id
+            JOIN service_centers sc ON ro.service_id = sc.service_id
+            JOIN part_types pt ON ro.part_id = pt.part_id
+            ORDER BY ro.operation_date DESC
+            LIMIT ?
+        `;
+        const [rows] = await db.execute(sql, [limit]);
+        return rows;
+    },
+
+    // UPDATE: Tamir kaydını güncelle
+    updateRepair: async (id, data) => {
+        const sql = `
+            UPDATE repair_operations 
+            SET 
+                if_repair_successful = ?,
+                service_cost = ?,
+                service_time = ?
+            WHERE operation_id = ?
+        `;
+        const [result] = await db.execute(sql, [
+            data.if_repair_successful,
+            data.service_cost,
+            data.service_time,
+            id
+        ]);
+        return result.affectedRows;
+    },
+
+    // DELETE: Tamir kaydını sil
+    deleteRepair: async (id) => {
+        const sql = "DELETE FROM repair_operations WHERE operation_id = ?";
+        const [result] = await db.execute(sql, [id]);
+        return result.affectedRows;
+    },
+
+    // İş Kuralı için: Tamir'in kritik anomalisi var mı?
+    hasRepairCriticalAnomaly: async (id) => {
+        const sql = `
+            SELECT COUNT(*) as count 
+            FROM anomaly_log 
+            WHERE operation_id = ? AND severity IN ('CRITICAL', 'HIGH')
+        `;
+        const [rows] = await db.execute(sql, [id]);
+        return rows[0].count > 0;
     }
 };
 

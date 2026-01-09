@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>iPhone KDS Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <h1>📱 iPhone Yedek Parça Karar Destek Sistemi</h1>
+            <p class="subtitle">Ege Bölgesi Yetkili Servisler - MVC Architecture</p>
+            <div class="api-controls">
+                <button class="api-btn" onclick="refreshAllData()">🔄 Verileri Yenile</button>
+                <button class="api-btn" onclick="toggleAPIPanel()">🔧 API Test Panel</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- API Test Panel (Gizli) -->
+    <div id="api-panel" class="api-panel" style="display: none;">
+        <div class="container">
+            <h3>🧪 API Test Panel</h3>
+            <div class="api-grid">
+                <div class="api-card">
+                    <h4>📊 Analiz Endpoint'leri</h4>
+                    <button onclick="testEndpoint('/api/kpi', 'GET')">GET /api/kpi</button>
+                    <button onclick="testEndpoint('/api/services', 'GET')">GET /api/services</button>
+                    <button onclick="testEndpoint('/api/anomalies', 'GET')">GET /api/anomalies</button>
+                    <button onclick="testEndpoint('/api/monthly-trend', 'GET')">GET /api/monthly-trend</button>
+                    <button onclick="testEndpoint('/api/predictions', 'GET')">GET /api/predictions</button>
+                </div>
+                
+                <div class="api-card">
+                    <h4>🔧 CRUD İşlemleri</h4>
+                    <button onclick="testEndpoint('/api/repairs', 'GET')">GET /api/repairs</button>
+                    <button onclick="testEndpoint('/api/repairs/1', 'GET')">GET /api/repairs/:id</button>
+                    <button onclick="showCRUDForm('POST')">POST /api/repairs</button>
+                    <button onclick="showCRUDForm('PUT')">PUT /api/repairs/:id</button>
+                    <button onclick="showCRUDForm('DELETE')">DELETE /api/repairs/:id</button>
+                </div>
+
+                <div class="api-card">
+                    <h4>⚖️ İş Kuralları</h4>
+                    <ul style="list-style: none; padding: 0; font-size: 0.9rem;">
+                        <li style="padding: 8px 0;">❌ Geçmiş tarihe tamir kaydı eklenemez</li>
+                        <li style="padding: 8px 0;">❌ Tamamlanmış tamir kayıtları silinemez</li>
+                        <li style="padding: 8px 0;">❌ Kritik anomalili tamir güncellenemez</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div id="api-response" style="display: none;">
+                <h4>📄 API Response:</h4>
+                <pre id="api-output"></pre>
+            </div>
+
+            <div id="crud-form" style="display: none;">
+                <h4>📝 CRUD Formu</h4>
+                <div id="crud-form-content"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="container">
+        
+        <!-- KPI Cards -->
+        <section class="kpi-section">
+            <h2>Genel Durum (Son 30 Gün)</h2>
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <div class="kpi-icon">🔧</div>
+                    <div class="kpi-content">
+                        <h3 id="total-repairs">-</h3>
+                        <p>Toplam Tamir</p>
+                        <span class="kpi-change" id="repairs-change">-</span>
+                    </div>
+                </div>
+
+                <div class="kpi-card">
+                    <div class="kpi-icon">⭐</div>
+                    <div class="kpi-content">
+                        <h3 id="customer-satisfaction">-</h3>
+                        <p>Müşteri Memnuniyeti</p>
+                        <span class="kpi-change" id="satisfaction-change">-</span>
+                    </div>
+                </div>
+
+                <div class="kpi-card">
+                    <div class="kpi-icon">⚠️</div>
+                    <div class="kpi-content">
+                        <h3 id="critical-anomalies">-</h3>
+                        <p>Kritik Anomali</p>
+                        <span class="kpi-change" id="anomalies-change">-</span>
+                    </div>
+                </div>
+
+                <div class="kpi-card">
+                    <div class="kpi-icon">💰</div>
+                    <div class="kpi-content">
+                        <h3 id="avg-cost">-</h3>
+                        <p>Ortalama Tamir Maliyeti</p>
+                        <span class="kpi-note">TL</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Monthly Trend Chart -->
+        <section class="chart-section">
+            <h2>📊 Aylık Tamir Trendi</h2>
+            <div class="chart-container">
+                <canvas id="monthlyTrendChart"></canvas>
+            </div>
+        </section>
+
+        <!-- Two Column Layout -->
+        <div class="two-column">
+            
+            <!-- Critical Anomalies -->
+            <section class="table-section">
+                <h2>⚠️ Kritik Anomaliler</h2>
+                <div class="table-container">
+                    <table id="anomalies-table">
+                        <thead>
+                            <tr>
+                                <th>Tarih</th>
+                                <th>Tip</th>
+                                <th>Servis</th>
+                                <th>Kritiklik</th>
+                            </tr>
+                        </thead>
+                        <tbody id="anomalies-body">
+                            <tr>
+                                <td colspan="4" class="loading">Yükleniyor...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Service Performance -->
+            <section class="table-section">
+                <h2>🏢 Servis Performansı</h2>
+                <div class="table-container">
+                    <table id="services-table">
+                        <thead>
+                            <tr>
+                                <th>Servis Adı</th>
+                                <th>İşlem Hacmi</th>
+                                <th>Başarı Oranı</th>
+                                <th>Müşteri Puanı</th>
+                                <th>GENEL SKOR</th>
+                            </tr>
+                        </thead>
+                        <tbody id="services-body">
+                            <tr>
+                                <td colspan="5" class="loading">Yükleniyor...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+
+        <!-- Predictions -->
+        <section class="table-section">
+            <h2>🔮 Tahminler (Önümüzdeki 12 Ay - Çeyrek Bazlı)</h2>
+            <div class="table-container">
+                <table id="predictions-table">
+                    <thead>
+                        <tr>
+                            <th>Model</th>
+                            <th>Parça</th>
+                            <th>Aylık Ort.</th>
+                            <th>1. Çeyrek</th>
+                            <th>2. Çeyrek</th>
+                            <th>3. Çeyrek</th>
+                            <th>4. Çeyrek</th>
+                            <th>Yıllık</th>
+                        </tr>
+                    </thead>
+                    <tbody id="predictions-body">
+                        <tr>
+                            <td colspan="8" class="loading">Yükleniyor...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>iPhone KDS 2025 &copy; MVC Architecture - Node.js + Express + MySQL</p>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script src="main.js"></script>
+</body>
+</html>
