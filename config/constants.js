@@ -1,8 +1,18 @@
-// config/constants.js
+/**
+ * config/constants.js
+ * Proje genelinde kullanılan sabitler ve simülasyon ayarları.
+ */
+
+/**
+ * Simülasyon modu kontrolü
+ * true: Sistem 18 Ocak 2025'i "bugün" kabul eder.
+ * false: Sistem gerçek zamanlı tarihi kullanır.
+ */
+const IS_SIMULATION_MODE = true;
 
 /**
  * Simülasyonun "bugün" tarihi
- * Python kodundaki sabit değerle aynı
+ * Python kodundaki sabit değerle aynı (18 Ocak 2025)
  */
 const SIMULATION_END_DATE = new Date('2025-01-18');
 
@@ -11,7 +21,7 @@ const SIMULATION_END_DATE = new Date('2025-01-18');
  */
 const DEFAULT_PERIODS = {
     KPI: 30,
-    TREND: 12 * 30, // 12 ay
+    TREND: 12 * 30, // 360 gün (12 ay)
     PREDICTION: 90
 };
 
@@ -53,7 +63,11 @@ const DEFAULT_LIMITS = {
     TOP_PREDICTIONS: 15
 };
 
+/**
+ * Modül dışa aktarma
+ */
 module.exports = {
+    IS_SIMULATION_MODE,
     SIMULATION_END_DATE,
     DEFAULT_PERIODS,
     ANOMALY_SEVERITY,
